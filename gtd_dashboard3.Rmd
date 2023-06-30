@@ -1,0 +1,853 @@
+---
+title: "Global Terrorism Database"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: united
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(ggplot2)
+library(leaflet)
+library(shinyWidgets)
+library(plotly)
+
+#Load Packages
+library(tidyverse)
+```
+
+```{r set working directory, echo = FALSE}
+#Set working directory
+
+setwd("C:/Users/Eli/Desktop/Global_Terrorism_Dataset")
+```
+
+```{r load data}
+gtd <- read.csv("csv_gtd_70to95.csv", header = TRUE)
+```
+
+```{r convert to tibble}
+gtdtib <- as_tibble(gtd)
+```
+
+
+Overview
+===========================================================
+
+Column {data-width=200 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+selectInput("region", 
+            "Select a Region of the World",
+            choices = levels(gtdtib$region_txt))
+
+sliderInput("year", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+gtd_filter1 <- reactive({
+  gtdtib %>%
+    filter(region_txt == input$region,
+           iyear >= input$year[1] & iyear <= input$year[2]) %>%
+    mutate(total = n())
+
+})
+
+```
+
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter1() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n)
+  
+})
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter1() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Year Vs. Number of Casualties
+
+```{r}
+
+
+renderPlot({
+  ggplot(data = gtd_filter1(), aes(x = iyear, y = nkill)) +
+    geom_jitter(width = 0.3, height = 0, alpha = 0.3) +
+    xlab("Year") +
+    ylab("Number of Casualties")
+  
+})
+```
+
+Africa {data-navmenu="Middle East and Africa"} 
+=========================================================
+
+
+Column {data-width=250 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+
+gtdtib_af <- filter(gtdtib, region_txt == "Sub-Saharan Africa")
+
+
+pickerInput("countryaf", 
+            "Select a Country In Sub-Saharan Africa",
+            choices = levels(factor(gtdtib_af$country_txt)),
+            selected = levels(factor(gtdtib_af$country_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+sliderInput("yearaf", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+pickerInput("attacktypeaf", 
+            "Select a Type of Terrorist Attack",
+            choices = levels(factor(gtdtib_af$attacktype1_txt)),
+            selected = levels(factor(gtdtib_af$attacktype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+pickerInput("targettypeaf", 
+            "Select Target Type",
+            choices = levels(factor(gtdtib_af$targtype1_txt)),
+            selected = levels(factor(gtdtib_af$targtype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+gtd_filter_af <- reactive({
+  
+  gtdtib_af %>%
+    filter(country_txt %in% input$countryaf,
+           iyear >= input$yearaf[1] & iyear <= input$yearaf[2],
+           attacktype1_txt %in% input$attacktypeaf, 
+           targtype1_txt %in% input$targettypeaf)
+    })
+
+```
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter_af() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n)
+  
+})
+
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter_af() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Casualties
+
+```{r}
+renderPlotly({
+  
+  plot_ly(gtd_filter_af(), x = ~iyear, y = ~nkill, text = ~gname, type = 'scatter', mode = 'markers',
+        marker = list(size = ~nkill, opacity = 0.5)) %>%
+  layout(title = 'Number of Casualties',
+         xaxis = list(title = "Year", showgrid = FALSE),
+         yaxis = list(title = "Number of Casualties", showgrid = FALSE))
+})
+
+```
+
+Australasia & Oceania
+=========================================================
+
+
+Column {data-width=250 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+
+gtdtib_ao <- filter(gtdtib, region_txt == "Australasia & Oceania")
+
+
+pickerInput("countryao", 
+            "Select a Country In Australasia & Oceania",
+            choices = levels(factor(gtdtib_ao$country_txt)),
+            selected = levels(factor(gtdtib_ao$country_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+sliderInput("yearao", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+pickerInput("attacktypeao", 
+            "Select a Type of Terrorist Attack",
+            choices = levels(factor(gtdtib_ao$attacktype1_txt)),
+            selected = levels(factor(gtdtib_ao$attacktype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+pickerInput("targettypeao", 
+            "Select Target Type",
+            choices = levels(factor(gtdtib_ao$targtype1_txt)),
+            selected = levels(factor(gtdtib_ao$targtype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+gtd_filter_ao <- reactive({
+  
+  gtdtib_ao %>%
+    filter(country_txt %in% input$countryao,
+           iyear >= input$yearao[1] & iyear <= input$yearao[2],
+           attacktype1_txt %in% input$attacktypeao, 
+           targtype1_txt %in% input$targettypeao)
+    })
+
+```
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter_ao() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n)
+  
+})
+
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter_ao() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Casualties
+
+```{r}
+renderPlotly({
+  
+  plot_ly(gtd_filter_ao(), x = ~iyear, y = ~nkill, text = ~country_txt, type = 'scatter', mode = 'markers',
+        marker = list(size = ~nkill, opacity = 0.5)) %>%
+  layout(title = 'Number of Casualties',
+         xaxis = list(title = "Year", showgrid = FALSE),
+         yaxis = list(title = "Number of Casualties", showgrid = FALSE))
+})
+
+```
+
+Asia
+=========================================================
+
+
+Column {data-width=250 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+
+gtdtib_as <- filter(gtdtib, region_txt %in% c("Central Asia", "South Asia", "East Asia", "Southeast Asia"))
+
+
+pickerInput("countryas", 
+            "Select a Country In Asia",
+            choices = levels(factor(gtdtib_as$country_txt)),
+            selected = levels(factor(gtdtib_as$country_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+sliderInput("yearas", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+pickerInput("attacktypeas", 
+            "Select a Type of Terrorist Attack",
+            choices = levels(factor(gtdtib_as$attacktype1_txt)),
+            selected = levels(factor(gtdtib_as$attacktype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+pickerInput("targettypeas", 
+            "Select Target Type",
+            choices = levels(factor(gtdtib_as$targtype1_txt)),
+            selected = levels(factor(gtdtib_as$targtype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+gtd_filter_as <- reactive({
+  
+  gtdtib_as %>%
+    filter(country_txt %in% input$countryas,
+           iyear >= input$yearas[1] & iyear <= input$yearas[2],
+           attacktype1_txt %in% input$attacktypeas, 
+           targtype1_txt %in% input$targettypeas)
+    })
+
+```
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter_as() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n)
+  
+})
+
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter_as() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Casualties
+
+```{r}
+renderPlotly({
+  
+  plot_ly(gtd_filter_as(), x = ~iyear, y = ~nkill, text = ~country_txt, type = 'scatter', mode = 'markers',
+        marker = list(size = ~nkill, opacity = 0.5)) %>%
+  layout(title = 'Number of Casualties',
+         xaxis = list(title = "Year", showgrid = FALSE),
+         yaxis = list(title = "Number of Casualties", showgrid = FALSE))
+})
+
+```
+
+Europe
+=========================================================
+
+
+Column {data-width=250 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+
+gtdtib_eu <- filter(gtdtib, region_txt %in% c("Eastern Europe", "Western Europe"))
+
+
+pickerInput("countryeu", 
+            "Select a Country In Europe",
+            choices = levels(factor(gtdtib_eu$country_txt)),
+            selected = levels(factor(gtdtib_eu$country_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+sliderInput("yeareu", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+pickerInput("attacktypeeu", 
+            "Select a Type of Terrorist Attack",
+            choices = levels(factor(gtdtib_eu$attacktype1_txt)),
+            selected = levels(factor(gtdtib_eu$attacktype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+pickerInput("targettypeeu", 
+            "Select Target Type",
+            choices = levels(factor(gtdtib_eu$targtype1_txt)),
+            selected = levels(factor(gtdtib_eu$targtype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+gtd_filter_eu <- reactive({
+  
+  gtdtib_eu %>%
+    filter(country_txt %in% input$countryeu,
+           iyear >= input$yeareu[1] & iyear <= input$yeareu[2],
+           attacktype1_txt %in% input$attacktypeeu, 
+           targtype1_txt %in% input$targettypeeu)
+    })
+
+```
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter_eu() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n)
+  
+})
+
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter_eu() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Casualties
+
+```{r}
+renderPlotly({
+  
+  plot_ly(gtd_filter_eu(), x = ~iyear, y = ~nkill, text = ~country_txt, type = 'scatter', mode = 'markers',
+        marker = list(size = ~nkill, opacity = 0.5)) %>%
+  layout(title = 'Number of Casualties',
+         xaxis = list(title = "Year", showgrid = FALSE),
+         yaxis = list(title = "Number of Casualties", showgrid = FALSE))
+})
+
+```
+
+Latin America {data-navmenu="Americas"}
+=========================================================
+
+
+Column {data-width=250 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+
+gtdtib_la <- filter(gtdtib, region_txt %in% c("South America", "Central America & Caribbean"))
+
+
+pickerInput("countryla", 
+            "Select a Country In Latin America",
+            choices = levels(factor(gtdtib_la$country_txt)),
+            selected = levels(factor(gtdtib_la$country_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+sliderInput("yearla", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+pickerInput("attacktypela", 
+            "Select a Type of Terrorist Attack",
+            choices = levels(factor(gtdtib_la$attacktype1_txt)),
+            selected = levels(factor(gtdtib_la$attacktype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+pickerInput("targettypela", 
+            "Select Target Type",
+            choices = levels(factor(gtdtib_la$targtype1_txt)),
+            selected = levels(factor(gtdtib_la$targtype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+gtd_filter_la <- reactive({
+  
+  gtdtib_la %>%
+    filter(country_txt %in% input$countryla,
+           iyear >= input$yearla[1] & iyear <= input$yearla[2],
+           attacktype1_txt %in% input$attacktypela, 
+           targtype1_txt %in% input$targettypela)
+    })
+
+```
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter_la() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n)
+  
+})
+
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter_la() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Casualties
+
+```{r}
+renderPlotly({
+  
+  plot_ly(gtd_filter_la(), x = ~iyear, y = ~nkill, text = ~country_txt, type = 'scatter', mode = 'markers',
+        marker = list(size = ~nkill, opacity = 0.5)) %>%
+  layout(title = 'Number of Casualties',
+         xaxis = list(title = "Year", showgrid = FALSE),
+         yaxis = list(title = "Number of Casualties", showgrid = FALSE))
+})
+
+```
+
+Middle East & North Africa {data-navmenu="Middle East and Africa"}
+===========================================================================
+
+
+Column {data-width=250 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+
+gtdtib_me <- filter(gtdtib, region_txt == "Middle East & North Africa")
+
+
+pickerInput("countryme", 
+            "Select a Country In the Middle East or North Africa",
+            choices = levels(factor(gtdtib_me$country_txt)),
+            selected = levels(factor(gtdtib_me$country_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+sliderInput("yearme", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+pickerInput("attacktypeme", 
+            "Select a Type of Terrorist Attack",
+            choices = levels(factor(gtdtib_me$attacktype1_txt)),
+            selected = levels(factor(gtdtib_me$attacktype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+pickerInput("targettypeme", 
+            "Select Target Type",
+            choices = levels(factor(gtdtib_me$targtype1_txt)),
+            selected = levels(factor(gtdtib_me$targtype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+gtd_filter_me <- reactive({
+  
+  gtdtib_me %>%
+    filter(country_txt %in% input$countryme,
+           iyear >= input$yearme[1] & iyear <= input$yearme[2],
+           attacktype1_txt %in% input$attacktypeme, 
+           targtype1_txt %in% input$targettypeme)
+    })
+
+```
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter_me() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n)
+  
+})
+
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter_me() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Number of Casualties
+
+```{r}
+renderPlotly({
+  
+  plot_ly(gtd_filter_me(), x = ~iyear, y = ~nkill, text = ~country_txt, type = 'scatter', mode = 'markers',
+        marker = list(size = 7, opacity = 0.5)) %>%
+ layout(title = 'Number of Casualties',
+         xaxis = list(title = "Year", showgrid = FALSE),
+         yaxis = list(title = "Number of Casualties", showgrid = FALSE))
+})
+
+```
+
+
+
+```
+
+North America {data-navmenu="Americas"}
+=========================================================
+
+
+Column {data-width=250 .sidebar}
+-----------------------------------------------------------------------
+
+### Global Terrorist Incidents By Region and Year
+
+```{r}
+
+gtdtib_na <- filter(gtdtib, region_txt == "North America")
+
+
+pickerInput("countryna", 
+            "Select a Country In North America",
+            choices = levels(factor(gtdtib_na$country_txt)),
+            selected = levels(factor(gtdtib_na$country_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+sliderInput("yearna", 
+            label = "Select a Year Range:",
+            min = 1970,
+            max = 1995,
+            value = c(1970, 1995),
+            step = 1,
+            dragRange = TRUE)
+
+pickerInput("attacktypena", 
+            "Select a Type of Terrorist Attack",
+            choices = levels(factor(gtdtib_na$attacktype1_txt)),
+            selected = levels(factor(gtdtib_na$attacktype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+pickerInput("targettypena", 
+            "Select Target Type",
+            choices = levels(factor(gtdtib_na$targtype1_txt)),
+            selected = levels(factor(gtdtib_na$targtype1_txt)),
+                             options = pickerOptions(actionsBox = TRUE),
+            multiple = TRUE
+)
+
+gtd_filter_na <- reactive({
+  
+  gtdtib_na %>%
+    filter(country_txt %in% input$countryna,
+           iyear >= input$yearna[1] & iyear <= input$yearna[2],
+           attacktype1_txt %in% input$attacktypena, 
+           targtype1_txt %in% input$targettypena)
+    })
+
+```
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Map of Incidents Around the World
+
+```{r}
+renderLeaflet({
+  
+  gtd_filter_na() %>%
+    group_by(eventid, latitude, longitude) %>%
+    count() %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircles(radius = ~n) 
+    
+  
+  
+})
+
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Number of Terrorist Incidents
+
+```{r}
+renderValueBox({
+  valueBox(prettyNum(gtd_filter_na() %>%
+                       nrow(), big.mark = ','))
+})
+```
+
+### Casualties
+
+```{r}
+renderPlotly({
+  
+  plot_ly(gtd_filter_na(), x = ~iyear, y = ~nkill, text = ~country_txt, type = 'scatter', mode = 'markers',
+        marker = list(size = ~nkill, opacity = 0.5)) %>%
+  layout(title = 'Number of Casualties',
+         xaxis = list(title = "Year", showgrid = FALSE),
+         yaxis = list(title = "Number of Casualties", showgrid = FALSE))
+})
+
+```
